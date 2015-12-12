@@ -5,6 +5,7 @@ import operator as op
 # a symbol is anything that can hold a value. We represent it as a string.
 Symbol = str
 
+
 class Procedure:
     """
     A procedure is just a function. It is composed by a set of parameters,
@@ -19,6 +20,7 @@ class Procedure:
         local_env = Env(upper_env=self.env)
         local_env.update(zip(self.args, values))
         return eval(self.body, local_env)
+
 
 class Env(dict):
     """
@@ -39,8 +41,12 @@ class Env(dict):
         """
         return self if param in self else self.upper.find(param)
 
+
 def eval(x, env):
     """Evaluate an expression (x) given a certain environment (env)."""
+
+    if x is None:
+        return None
 
     if isinstance(x, Number):
         return x
@@ -51,14 +57,14 @@ def eval(x, env):
 
     # is it a definition?
     # (define name value)
-    elif x[0] == "define": # (define variable value)
+    elif x[0] == "define":
         _, var, expr = x
         env[var] = eval(expr, env)
 
     # is it a conditional?
     # (if (condition) (consequence) (alternative))
     elif x[0] == "if":
-        _, cond, conseq, alt = x
+        cond, conseq, alt = x[1], x[2], x[3] if len(x) > 3 else None
         if eval(cond, env):
             return eval(conseq, env)
         else:
@@ -85,9 +91,11 @@ def eval(x, env):
         args = [eval(arg, env) for arg in args]
         return proc(*args)
 
+
 def tokenize(program):
     """Split the program into tokens (words, ")" and "(")."""
     return program.replace("(", " ( ").replace(")", " ) ").split()
+
 
 def atom(token):
     try:
@@ -97,6 +105,7 @@ def atom(token):
             return float(token)
         except ValueError:
             return Symbol(token)
+
 
 def read_from_tokens(tokens):
     """
@@ -119,11 +128,13 @@ def read_from_tokens(tokens):
     else:
         return atom(token)
 
+
 def parse(program):
     """Go from the raw program code to the abstract syntax tree."""
     tokens = tokenize(program)
     while (tokens):
         yield read_from_tokens(tokens)
+
 
 def standard_env():
     env = Env()
@@ -137,15 +148,18 @@ def standard_env():
         '<=': op.le,
         '>': op.gt,
         '<': op.lt,
-        '=': op.eq
+        '=': op.eq,
+        'display': print,
+        'begin': (lambda *x: x[-1])
         })
     return env
+
 
 def repl(env, prompt='lispy> '):
     expr = input(prompt)
     for statement in parse(expr):
         res = eval(statement, env)
-        if res != None:
+        if res is not None:
             print(res)
         repl(env, prompt)
 
