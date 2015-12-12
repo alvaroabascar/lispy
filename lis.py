@@ -121,7 +121,9 @@ def read_from_tokens(tokens):
 
 def parse(program):
     """Go from the raw program code to the abstract syntax tree."""
-    return read_from_tokens(tokenize(program))
+    tokens = tokenize(program)
+    while (tokens):
+        yield read_from_tokens(tokens)
 
 def standard_env():
     env = Env()
@@ -141,15 +143,21 @@ def standard_env():
 
 def repl(env, prompt='lispy> '):
     expr = input(prompt)
-    res = eval(parse(expr), env)
-    if res != None:
-        print(res)
-    repl(env, prompt)
+    for statement in parse(expr):
+        res = eval(statement, env)
+        if res != None:
+            print(res)
+        repl(env, prompt)
 
 if __name__ == '__main__':
     import sys
     env = standard_env()
+    # if no arguments, run REPL
     if len(sys.argv) <= 1:
         repl(env)
-    print(eval(parse(sys.argv[1]), env))
-    print(parse(sys.argv[1]))
+    # if argument, run program passed as first argument
+    else:
+        with open(sys.argv[1]) as fd:
+            # print(list(parse(fd.read())))
+            for statement in parse(fd.read()):
+                eval(statement, env)
